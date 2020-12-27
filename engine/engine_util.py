@@ -1,23 +1,64 @@
 import engine_constants
+import piece_movement
 import bitboard as bb
+import numpy as np
 
 
-def piece_class_by_location(bit_board: bb, location):
+def piece_class_by_location(bit_board: bb, location, just_class=False):
     """
     Find the class of the piece at a given board position
     :param bit_board: BitBoard object
     :param location: 2-tuple (x,y) of the given location
+    :param just_class: whether to just return the internal name of the piece or not.
     :return: the piece's class at location, or "" if it does not exist.
     """
     location_bitboard = location_to_bitboard(location)
 
     for key in bit_board:
         if bit_board[key] & location_bitboard != 0:
+            if just_class:
+                return key
             import visual_constants
             name, color = visual_constants.PIECE_CLASS_TO_TEXT[key]
             return "red " if color == 'r' else "black" + " " + name
 
     return ""
+
+
+def bitboard_to_locations(single_piece_bit_board):
+    """
+    Converts a bitboard into a list of locations
+    :param single_piece_bit_board: integer containing the bitboard of a single piece
+    :return: a list containing 2-tuples (x,y) of all the locations.
+    """
+    locations = []
+
+    # Convert the bit board into a string
+    binary_rep = np.binary_repr(single_piece_bit_board, width=engine_constants.N_FILES * engine_constants.N_RANKS)
+
+    for i in range(len(binary_rep)):
+        if binary_rep[i] == '1':
+            # Decode the position into its x and y grid coordinates
+            x_location = i % engine_constants.N_FILES
+            y_location = i // engine_constants.N_RANKS
+            locations.append((x_location, y_location))
+
+    # Return the list of all locations, as specified by the bit board.
+    return locations
+
+
+def locations_to_bitboard(locations):
+    """
+    Given a list of locations, convert it into a bitboard representation.
+    :param locations: list of 2-tuples (x,y)
+    :return: a bit board locations.
+    """
+    bit_board = 0
+
+    for location in locations:
+        bit_board += location_to_bitboard(location)
+
+    return bit_board
 
 
 def location_to_bitboard(location):
@@ -38,7 +79,7 @@ def move_piece_by_location(bit_boards, old_location, new_location):
     :param bit_boards: a BitBoard object
     :param old_location: 2-tuple (x,y), The location of the original piece.
     :param new_location: 2-tuple (x,y), The location to move the piece to.
-    :return: void, bit_boards is updated in place.
+    :return: boolean, True if the movement is valid, and False otherwise.
     """
     # Convert the locations into their bitboard representations.
     old_bitboard = location_to_bitboard(old_location)
@@ -54,7 +95,18 @@ def move_piece_by_location(bit_boards, old_location, new_location):
             piece_type = key
             break
 
-    # Update the board positions
     if piece_type is not None:
+        # Determine the bitboard of valid locations for movement by the piece
+        valid_movement_options = piece_movement.return_valid_moves_by_type(bit_boards, piece_type)
+
+        # If the piece type is not valid
+        if new_bitboard & valid_movement_options == 0:
+            return False
+
+        # Update the board positions
         bit_boards[key] &= ~old_bitboard
         bit_boards[key] |= new_bitboard
+
+        return True
+
+    return False

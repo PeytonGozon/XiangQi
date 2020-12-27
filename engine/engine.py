@@ -1,5 +1,5 @@
 from bitboard import BitBoard
-
+import piece_movement
 
 class ChessEngine:
     # TODO: Add in rules to generate legal moves

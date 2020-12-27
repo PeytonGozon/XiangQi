@@ -1,4 +1,4 @@
-from pygame import Rect
+from pygame import Rect, Surface, SRCALPHA
 from engine_constants import *
 
 # Scale of all UI components, Refresh Rate (30 Hz)
@@ -34,10 +34,12 @@ LINE_COLOR = (0, 0, 0)
 BACKGROUND_COLOR = (255, 165, 0)
 PIECE_COLOR = (128, 128, 128)
 RED_TEXT = (255, 0, 0)
-BLACK_TEXT = (255, 255, 255)
+BLACK_TEXT = (0, 0, 0)
+POTENTIAL_COLOR = (0, 255, 0, 128)
 
 # Piece properties
 PIECE_RADIUS = 50
+POTENTIAL_LOCATION_SURF = Surface((2*PIECE_RADIUS, 2*PIECE_RADIUS), SRCALPHA)
 
 # Convert a piece class into its correct text
 PIECE_CLASS_TO_TEXT = {

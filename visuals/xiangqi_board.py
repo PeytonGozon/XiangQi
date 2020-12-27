@@ -3,6 +3,7 @@ import engine
 import utils
 import engine_util
 from visual_constants import *
+import piece_movement
 
 
 class Board(object):
@@ -36,6 +37,9 @@ class Board(object):
         text_size = temp.get_size()
         self._text_displacement = (0.5 * text_size[0], 0.5 * text_size[1])
 
+        # Initialize the green circle that show legal moves
+        pygame.draw.circle(POTENTIAL_LOCATION_SURF, POTENTIAL_COLOR, (PIECE_RADIUS, PIECE_RADIUS), PIECE_RADIUS)
+
         # Start the game
         self._running = True
 
@@ -54,6 +58,9 @@ class Board(object):
         # render the board and the pieces
         self.render_board_background()
         self.render_pieces()
+
+        if self._piece_hovering:
+            self.render_valid_moves()
 
         # Update the screen and the clock
         pygame.display.update()
@@ -87,43 +94,81 @@ class Board(object):
             if self._piece_hovering:
                 piece_class = engine_util.piece_class_by_location(self._chess_engine.bit_board, grid_location)
                 pygame.display.set_caption(f'棋 - XiangQi [MOVING  {piece_class} from location {grid_location}]')
-            else:
-                pygame.display.set_caption("象棋 - XiangQi")
 
             # If the piece is no longer hovering, move its location
             if not self._piece_hovering:
-                self.move_piece(True)
+                success = self.move_piece(True)
+                if success:
+                    self._piece_locations = []
+                    pygame.display.set_caption("象棋 - XiangQi")
+                else:
+                    self._piece_hovering = True
+                    if len(self._piece_locations) > 1:
+                        self._piece_locations.pop(-1)
+
+
 
     def move_piece(self, verbose=False):
         # Need an even number of locations to know where we're moving from to where we're moving to.
         assert (len(self._piece_locations) % 2 == 0)
 
-        if verbose:
-            print("Moved piece: ", self._piece_locations)
+        success = engine_util.move_piece_by_location(self._chess_engine.bit_board, self._piece_locations[0],
+                                                     self._piece_locations[1])
 
-        engine_util.move_piece_by_location(self._chess_engine.bit_board, self._piece_locations[0],
-                                           self._piece_locations[1])
+        if success:
+            if verbose:
+                print("Moved piece: ", self._piece_locations)
+            # Clean the piece locations to maintain memory
+            return True
 
-        # Clean the piece locations to maintain memory
-        self._piece_locations = []
+        return False
 
-    def render_piece(self, piece_class, locations):
-        text, team = PIECE_CLASS_TO_TEXT[piece_class]
-        text_image = self._font.render(text, True, RED_TEXT if team is 'r' else BLACK_TEXT)
+    def render_valid_moves(self):
+        # Obtain the location of the piece we're moving
+        location = self._piece_locations[0]
+
+        # obtain the piece class:
+        piece_class = engine_util.piece_class_by_location(self._chess_engine.bit_board, location, just_class=True)
+
+        # Find the correct set of valid moves
+        valid_moves = []
+
+        # Generate all the valid moves for it
+        # if piece_class == 'g':  # Black General
+        #     valid_moves = engine_util.bitboard_to_locations(
+        #         piece_movement.black_general_valid_movements(self._chess_engine.bit_board))
+        #     print(valid_moves)
+
+        valid_moves = engine_util.bitboard_to_locations(
+            piece_movement.return_valid_moves_by_type(self._chess_engine.bit_board, piece_class)
+        )
+
+        # Render green circles at all valid locations
+        self.render_piece_class('potential', valid_moves)
+
+    def render_piece_class(self, piece_class, locations):
+        if piece_class != 'potential':
+            text, team = PIECE_CLASS_TO_TEXT[piece_class]
+            text_image = self._font.render(text, True, RED_TEXT if team is 'r' else BLACK_TEXT)
 
         for location in locations:
-            x = (location % N_FILES) * HORIZONTAL_TILE_SIZE + HORIZONTAL_PADDING
-            y = int(location / N_FILES) * VERTICAL_TILE_SIZE + VERTICAL_PADDING
-
-            pygame.draw.circle(self._display_surf, center=(x, y), color=PIECE_COLOR, radius=PIECE_RADIUS)
-            self._display_surf.blit(text_image, (x - self._text_displacement[0], y - self._text_displacement[1]))
+            if piece_class != 'potential':
+                x = (location % N_FILES) * HORIZONTAL_TILE_SIZE + HORIZONTAL_PADDING
+                y = int(location / N_FILES) * VERTICAL_TILE_SIZE + VERTICAL_PADDING
+                pygame.draw.circle(self._display_surf, center=(x, y), color=PIECE_COLOR, radius=PIECE_RADIUS)
+                self._display_surf.blit(text_image, (x - self._text_displacement[0], y - self._text_displacement[1]))
+            else:
+                # If we're not rendering a piece, we're rendering potential locations for a piece.
+                x = location[0] * HORIZONTAL_TILE_SIZE + HORIZONTAL_PADDING - PIECE_RADIUS
+                y = location[1] * VERTICAL_TILE_SIZE + VERTICAL_PADDING - PIECE_RADIUS
+                self._display_surf.blit(POTENTIAL_LOCATION_SURF, (x, y))
 
     def render_pieces(self):
         # Obtain the location of every piece from its bit board and render it.
         locations = self._chess_engine.bit_board.get_locations_by_piece_class()
         for k, v in locations.items():
             # v is a tuple in the form (important,), so v[0] obtains the important information.
-            self.render_piece(k, v[0])
+            self.render_piece_class(k, v[0])
 
     def render_board_background(self):
         # begin by cleaning the board
