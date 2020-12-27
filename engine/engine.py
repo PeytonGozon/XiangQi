@@ -2,7 +2,6 @@ from bitboard import BitBoard
 
 
 class ChessEngine:
-    # TODO: Add functionality to move pieces
     # TODO: Add in rules to generate legal moves
     # TODO: Allow user to move pieces via their mouse
     # TODO: Build an AI

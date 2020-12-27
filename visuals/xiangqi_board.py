@@ -1,5 +1,7 @@
 import pygame
 import engine
+import utils
+import engine_util
 from visual_constants import *
 
 
@@ -12,6 +14,9 @@ class Board(object):
         self._font = None
         self._clock = None
         self._text_displacement = None
+        # whether we are currently moving a piece or not.
+        self._piece_hovering = False
+        self._piece_locations = []
 
     def on_init(self):
         # Initialize pygame, the visual backend
@@ -39,6 +44,8 @@ class Board(object):
         # TODO: Add the ability to move pieces
         if event.type == pygame.QUIT:
             self._running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            self.handle_move_piece(pygame.mouse.get_pos())
 
     def on_loop(self):
         pass
@@ -68,6 +75,38 @@ class Board(object):
 
         self.on_cleanup()
 
+    def handle_move_piece(self, mouse_location, verbose=False):
+        # Convert the mouse's location into grid coordinates
+        grid_location = utils.mouse_location_to_grid_location(mouse_location)
+
+        if grid_location != utils.BAD_LOCATION:
+            self._piece_hovering = not self._piece_hovering
+            self._piece_locations.append(grid_location)
+
+            # Update the game window's title to let the user know they are hovering
+            if self._piece_hovering:
+                piece_class = engine_util.piece_class_by_location(self._chess_engine.bit_board, grid_location)
+                pygame.display.set_caption(f'棋 - XiangQi [MOVING  {piece_class} from location {grid_location}]')
+            else:
+                pygame.display.set_caption("象棋 - XiangQi")
+
+            # If the piece is no longer hovering, move its location
+            if not self._piece_hovering:
+                self.move_piece(True)
+
+    def move_piece(self, verbose=False):
+        # Need an even number of locations to know where we're moving from to where we're moving to.
+        assert (len(self._piece_locations) % 2 == 0)
+
+        if verbose:
+            print("Moved piece: ", self._piece_locations)
+
+        engine_util.move_piece_by_location(self._chess_engine.bit_board, self._piece_locations[0],
+                                           self._piece_locations[1])
+
+        # Clean the piece locations to maintain memory
+        self._piece_locations = []
+
     def render_piece(self, piece_class, locations):
         text, team = PIECE_CLASS_TO_TEXT[piece_class]
         text_image = self._font.render(text, True, RED_TEXT if team is 'r' else BLACK_TEXT)
@@ -77,7 +116,7 @@ class Board(object):
             y = int(location / N_FILES) * VERTICAL_TILE_SIZE + VERTICAL_PADDING
 
             pygame.draw.circle(self._display_surf, center=(x, y), color=PIECE_COLOR, radius=PIECE_RADIUS)
-            self._display_surf.blit(text_image, (x-self._text_displacement[0], y-self._text_displacement[1]))
+            self._display_surf.blit(text_image, (x - self._text_displacement[0], y - self._text_displacement[1]))
 
     def render_pieces(self):
         # Obtain the location of every piece from its bit board and render it.
@@ -98,20 +137,20 @@ class Board(object):
         for i in range(1, (N_RANKS - 1)):
             pygame.draw.line(self._display_surf, LINE_COLOR,
                              (HORIZONTAL_PADDING, VERTICAL_PADDING + i * VERTICAL_TILE_SIZE),
-                             (WINDOW_WIDTH-HORIZONTAL_PADDING-10, VERTICAL_PADDING + i * VERTICAL_TILE_SIZE),
+                             (WINDOW_WIDTH - HORIZONTAL_PADDING - 10, VERTICAL_PADDING + i * VERTICAL_TILE_SIZE),
                              INNER_LINE_THICKNESS)
 
         # Draw the files (top-down lines, with a river in rank 5).
         for i in range(1, (N_FILES - 1)):
             # portion of line above the river
             pygame.draw.line(self._display_surf, LINE_COLOR,
-                             (HORIZONTAL_PADDING+i*HORIZONTAL_TILE_SIZE, VERTICAL_PADDING),
-                             (HORIZONTAL_PADDING+i*HORIZONTAL_TILE_SIZE, VERTICAL_PADDING+4*VERTICAL_TILE_SIZE),
+                             (HORIZONTAL_PADDING + i * HORIZONTAL_TILE_SIZE, VERTICAL_PADDING),
+                             (HORIZONTAL_PADDING + i * HORIZONTAL_TILE_SIZE, VERTICAL_PADDING + 4 * VERTICAL_TILE_SIZE),
                              INNER_LINE_THICKNESS)
             # portion of line below the river
             pygame.draw.line(self._display_surf, LINE_COLOR,
-                             (HORIZONTAL_PADDING + i * HORIZONTAL_TILE_SIZE, VERTICAL_PADDING+5*VERTICAL_TILE_SIZE),
-                             (HORIZONTAL_PADDING + i * HORIZONTAL_TILE_SIZE, WINDOW_HEIGHT - VERTICAL_PADDING-10),
+                             (HORIZONTAL_PADDING + i * HORIZONTAL_TILE_SIZE, VERTICAL_PADDING + 5 * VERTICAL_TILE_SIZE),
+                             (HORIZONTAL_PADDING + i * HORIZONTAL_TILE_SIZE, WINDOW_HEIGHT - VERTICAL_PADDING - 10),
                              INNER_LINE_THICKNESS)
 
         # Draw in the diagonal lines for advisors

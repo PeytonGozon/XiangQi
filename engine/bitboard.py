@@ -1,8 +1,10 @@
 from engine_constants import N_RANKS, N_FILES, BIT_BOARD_WIDTH, DEFAULT_BOARD_STATE
+from engine_util import location_to_bitboard
 import numpy as np
+import collections
 
 
-class BitBoard(object):
+class BitBoard(collections.MutableMapping):
     def __init__(self, board_state=None):
         """
         Initialize a BitBoard object to encapsulate the board's game state. If board_state is specified, then it uses
@@ -26,6 +28,15 @@ class BitBoard(object):
     def __iter__(self):
         return self.bit_boards.__iter__()
 
+    def __len__(self):
+        return self.bit_boards.__len__()
+
+    def __setitem__(self, key, value):
+        self.bit_boards[key] = value
+
+    def __delitem__(self, key):
+        self.bit_boards.__delitem__(key)
+
     def get_locations_by_piece_class(self):
         locations = {}
 
@@ -36,6 +47,14 @@ class BitBoard(object):
             locations[piece_class] = np.nonzero(binary_rep)
 
         return locations
+
+    def get_class_by_location(self, location):
+        # Convert the location to a bitboard representation
+        bitboard = location_to_bitboard(location)
+
+        for key in self.bit_boards:
+            if self.bit_boards[key] & bitboard != 0:
+                return key
 
     def string_array_to_bit_board(self, string_game_state, verbose=True):
         """
@@ -67,13 +86,6 @@ class BitBoard(object):
                 if piece is '.':
                     continue
 
-                # Create a string of 0s with capacity to store the entire board state.
-                binary = '0' * BIT_BOARD_WIDTH
-
-                # Denote the current position with a 1.
-                loc = y * N_FILES + x
-                binary = binary[:loc] + '1' + binary[loc + 1:]
-
                 # Add the current position's binary to the correct bit board.
                 if piece in self.bit_boards:
-                    self.bit_boards[piece] += int(binary, 2)
+                    self.bit_boards[piece] += location_to_bitboard((x, y))
