@@ -1,21 +1,42 @@
 import pygame
-from pygame.locals import *
-from visuals.constants import *
+import engine
+from visual_constants import *
 
 
-class Board:
-    def __init__(self):
+class Board(object):
+    def __init__(self, chess_engine: engine.ChessEngine, special_board=None):
         self._running = True
         self._display_surf = None
-        self.size = WINDOW_WIDTH, WINDOW_HEIGHT
+        self._size = WINDOW_WIDTH, WINDOW_HEIGHT
+        self._chess_engine = chess_engine
+        self._font = None
+        self._clock = None
+        self._text_displacement = None
 
     def on_init(self):
+        # Initialize pygame, the visual backend
         pygame.init()
-        self._display_surf = pygame.display.set_mode(self.size, pygame.HWACCEL | pygame.DOUBLEBUF)
+        pygame.font.init()
+
+        # Create the window
+        self._display_surf = pygame.display.set_mode(self._size, pygame.HWACCEL | pygame.DOUBLEBUF)
         pygame.display.set_caption("象棋 - XiangQi")
+
+        # Initialize a timer to maintain consistent FPS (and to limit CPU usage)
+        self._clock = pygame.time.Clock()
+
+        # Load the font for drawing text to the pieces, and determine the optimal text displacement
+        self._font = pygame.font.Font('font.ttf', 48)
+        temp = self._font.render('车', True, BLACK_TEXT)
+        text_size = temp.get_size()
+        self._text_displacement = (0.5 * text_size[0], 0.5 * text_size[1])
+
+        # Start the game
         self._running = True
 
     def on_event(self, event):
+        # depending on event, update screen
+        # TODO: Add the ability to move pieces
         if event.type == pygame.QUIT:
             self._running = False
 
@@ -23,11 +44,16 @@ class Board:
         pass
 
     def on_render(self):
-        self.render_board()
+        # render the board and the pieces
+        self.render_board_background()
+        self.render_pieces()
 
+        # Update the screen and the clock
         pygame.display.update()
+        self._clock.tick(FPS)
 
     def on_cleanup(self):
+        pygame.font.quit()
         pygame.quit()
 
     def on_execute(self):
@@ -42,7 +68,25 @@ class Board:
 
         self.on_cleanup()
 
-    def render_board(self):
+    def render_piece(self, piece_class, locations):
+        text, team = PIECE_CLASS_TO_TEXT[piece_class]
+        text_image = self._font.render(text, True, RED_TEXT if team is 'r' else BLACK_TEXT)
+
+        for location in locations:
+            x = (location % N_FILES) * HORIZONTAL_TILE_SIZE + HORIZONTAL_PADDING
+            y = int(location / N_FILES) * VERTICAL_TILE_SIZE + VERTICAL_PADDING
+
+            pygame.draw.circle(self._display_surf, center=(x, y), color=PIECE_COLOR, radius=PIECE_RADIUS)
+            self._display_surf.blit(text_image, (x-self._text_displacement[0], y-self._text_displacement[1]))
+
+    def render_pieces(self):
+        # Obtain the location of every piece from its bit board and render it.
+        locations = self._chess_engine.bit_board.get_locations_by_piece_class()
+        for k, v in locations.items():
+            # v is a tuple in the form (important,), so v[0] obtains the important information.
+            self.render_piece(k, v[0])
+
+    def render_board_background(self):
         # begin by cleaning the board
         self._display_surf.fill(BACKGROUND_COLOR)
 
@@ -51,14 +95,14 @@ class Board:
                          border_radius=OUTER_LINE_THICKNESS)
 
         # Draw the ranks (left-right lines)
-        for i in range(1, N_VERTICAL_TILES):
+        for i in range(1, (N_RANKS - 1)):
             pygame.draw.line(self._display_surf, LINE_COLOR,
                              (HORIZONTAL_PADDING, VERTICAL_PADDING + i * VERTICAL_TILE_SIZE),
                              (WINDOW_WIDTH-HORIZONTAL_PADDING-10, VERTICAL_PADDING + i * VERTICAL_TILE_SIZE),
                              INNER_LINE_THICKNESS)
 
         # Draw the files (top-down lines, with a river in rank 5).
-        for i in range(1, N_HORIZONTAL_TILES):
+        for i in range(1, (N_FILES - 1)):
             # portion of line above the river
             pygame.draw.line(self._display_surf, LINE_COLOR,
                              (HORIZONTAL_PADDING+i*HORIZONTAL_TILE_SIZE, VERTICAL_PADDING),
@@ -92,5 +136,6 @@ class Board:
 
 
 if __name__ == "__main__":
-    xiangqi_board = Board()
+    xiangqi_engine = engine.ChessEngine()
+    xiangqi_board = Board(xiangqi_engine)
     xiangqi_board.on_execute()
