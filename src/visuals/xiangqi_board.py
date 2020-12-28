@@ -104,7 +104,7 @@ class Board(object):
         if grid_location != BAD_LOCATION:
             # Ensure that there is a piece at the selected location
             piece_class = piece_class_by_location(
-                self._chess_engine.bit_board, grid_location, just_class=True
+                self._chess_engine.bit_board, grid_location
             )
 
             # If the piece at the location is not none
@@ -122,7 +122,7 @@ class Board(object):
                     self._piece_selected = True
                     # Find the correct name for the piece
                     piece_class = PIECE_CLASS_TO_TEXT[piece_class][0]
-                    pygame.display.set_caption(f'棋 - XiangQi [MOVING {piece_class} from location {grid_location}]')
+                    pygame.display.set_caption(f'棋 - XiangQi [{piece_class} from {grid_location}]')
 
         else:  # Invalid Chess Piece, reset the function.
             self._piece_movement_locations = []
@@ -150,7 +150,7 @@ class Board(object):
         location = self._piece_movement_locations[0]
 
         # obtain the piece class:
-        piece_class = engine_util.piece_class_by_location(self._chess_engine.bit_board, location, just_class=True)
+        piece_class = engine_util.piece_class_by_location(self._chess_engine.bit_board, location)
 
         # Find the correct set of valid moves
         valid_moves = engine_util.bitboard_to_locations(
