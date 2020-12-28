@@ -1,5 +1,5 @@
 import numpy as np
-import engine_util
+from .engine_util import locations_to_bitboard
 
 N_FILES = 9
 N_RANKS = 10
@@ -41,4 +41,4 @@ RED_PALACE_LOCATIONS = [
     (3, 10), (4, 10), (5, 10)
 ]
 
-BLACK_PALACE_BITBOARD = engine_util.locations_to_bitboard(BLACK_PALACE_LOCATIONS)
+BLACK_PALACE_BITBOARD = locations_to_bitboard(BLACK_PALACE_LOCATIONS)

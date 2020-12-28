@@ -1,5 +1,5 @@
 from pygame import Rect, Surface, SRCALPHA
-from engine_constants import *
+from engine.engine_constants import N_RANKS, N_FILES
 
 # Scale of all UI components, Refresh Rate (30 Hz)
 SCALE = 2
@@ -38,7 +38,7 @@ BLACK_TEXT = (0, 0, 0)
 POTENTIAL_COLOR = (0, 255, 0, 128)
 
 # Piece properties
-PIECE_RADIUS = 50
+PIECE_RADIUS = SCALE*25
 POTENTIAL_LOCATION_SURF = Surface((2*PIECE_RADIUS, 2*PIECE_RADIUS), SRCALPHA)
 
 # Convert a piece class into its correct text

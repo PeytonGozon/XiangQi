@@ -1,10 +1,4 @@
-import engine_constants
-import piece_movement
-import bitboard as bb
-import numpy as np
-
-
-def piece_class_by_location(bit_board: bb, location, just_class=False):
+def piece_class_by_location(bit_board, location, just_class=False):
     """
     Find the class of the piece at a given board position
     :param bit_board: BitBoard object
@@ -18,8 +12,8 @@ def piece_class_by_location(bit_board: bb, location, just_class=False):
         if bit_board[key] & location_bitboard != 0:
             if just_class:
                 return key
-            import visual_constants
-            name, color = visual_constants.PIECE_CLASS_TO_TEXT[key]
+            import visuals.visual_constants
+            name, color = visuals.visual_constants.PIECE_CLASS_TO_TEXT[key]
             return "red " if color == 'r' else "black" + " " + name
 
     return ""
@@ -31,6 +25,8 @@ def bitboard_to_locations(single_piece_bit_board):
     :param single_piece_bit_board: integer containing the bitboard of a single piece
     :return: a list containing 2-tuples (x,y) of all the locations.
     """
+    from engine import engine_constants
+    import numpy as np
     locations = []
 
     # Convert the bit board into a string
@@ -62,6 +58,7 @@ def locations_to_bitboard(locations):
 
 
 def location_to_bitboard(location):
+    from engine import engine_constants
     # Create a string of 0s with capacity to store the entire board state.
     binary = '0' * engine_constants.BIT_BOARD_WIDTH
 
@@ -81,6 +78,7 @@ def move_piece_by_location(bit_boards, old_location, new_location):
     :param new_location: 2-tuple (x,y), The location to move the piece to.
     :return: boolean, True if the movement is valid, and False otherwise.
     """
+    from engine import piece_movement
     # Convert the locations into their bitboard representations.
     old_bitboard = location_to_bitboard(old_location)
     new_bitboard = location_to_bitboard(new_location)
@@ -104,8 +102,15 @@ def move_piece_by_location(bit_boards, old_location, new_location):
             return False
 
         # Update the board positions
-        bit_boards[key] &= ~old_bitboard
-        bit_boards[key] |= new_bitboard
+        bit_boards[piece_type] &= ~old_bitboard
+        bit_boards[piece_type] |= new_bitboard
+
+        team = 'b' if str.islower(piece_type) else 'r'
+        # Handle capturing the other team's pieces (if they exist):
+        for key in bit_boards:
+            # Case of capturing a red piece.
+            if (team == 'b' and str.isupper(key)) or (team == 'r' and str.islower(key)):
+                bit_boards[key] &= ~new_bitboard
 
         return True
 

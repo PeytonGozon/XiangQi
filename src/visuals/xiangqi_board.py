@@ -1,13 +1,12 @@
 import pygame
-import engine
-import utils
-import engine_util
-from visual_constants import *
-import piece_movement
+from engine import piece_movement, engine_util
+from engine.chess_engine import ChessEngine
+from visuals import utils
+from visuals.visual_constants import *
 
 
 class Board(object):
-    def __init__(self, chess_engine: engine.ChessEngine, special_board=None):
+    def __init__(self, chess_engine: ChessEngine):
         self._running = True
         self._display_surf = None
         self._size = WINDOW_WIDTH, WINDOW_HEIGHT
@@ -32,7 +31,7 @@ class Board(object):
         self._clock = pygame.time.Clock()
 
         # Load the font for drawing text to the pieces, and determine the optimal text displacement
-        self._font = pygame.font.Font('font.ttf', 48)
+        self._font = pygame.font.Font('font.ttf', 24*SCALE)
         temp = self._font.render('车', True, BLACK_TEXT)
         text_size = temp.get_size()
         self._text_displacement = (0.5 * text_size[0], 0.5 * text_size[1])
@@ -44,8 +43,6 @@ class Board(object):
         self._running = True
 
     def on_event(self, event):
-        # depending on event, update screen
-        # TODO: Add the ability to move pieces
         if event.type == pygame.QUIT:
             self._running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -82,7 +79,7 @@ class Board(object):
 
         self.on_cleanup()
 
-    def handle_move_piece(self, mouse_location, verbose=False):
+    def handle_move_piece(self, mouse_location):
         # Convert the mouse's location into grid coordinates
         grid_location = utils.mouse_location_to_grid_location(mouse_location)
 
@@ -105,8 +102,6 @@ class Board(object):
                     self._piece_hovering = True
                     if len(self._piece_locations) > 1:
                         self._piece_locations.pop(-1)
-
-
 
     def move_piece(self, verbose=False):
         # Need an even number of locations to know where we're moving from to where we're moving to.
@@ -131,14 +126,6 @@ class Board(object):
         piece_class = engine_util.piece_class_by_location(self._chess_engine.bit_board, location, just_class=True)
 
         # Find the correct set of valid moves
-        valid_moves = []
-
-        # Generate all the valid moves for it
-        # if piece_class == 'g':  # Black General
-        #     valid_moves = engine_util.bitboard_to_locations(
-        #         piece_movement.black_general_valid_movements(self._chess_engine.bit_board))
-        #     print(valid_moves)
-
         valid_moves = engine_util.bitboard_to_locations(
             piece_movement.return_valid_moves_by_type(self._chess_engine.bit_board, piece_class)
         )
@@ -220,6 +207,9 @@ class Board(object):
 
 
 if __name__ == "__main__":
-    xiangqi_engine = engine.ChessEngine()
+    from engine.engine_constants import DEFAULT_BOARD_STATE
+    tweaked_board = DEFAULT_BOARD_STATE
+    tweaked_board[1][4] = 'P'
+    xiangqi_engine = ChessEngine()
     xiangqi_board = Board(xiangqi_engine)
     xiangqi_board.on_execute()
