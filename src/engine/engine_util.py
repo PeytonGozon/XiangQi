@@ -39,6 +39,9 @@ def bitboard_to_locations(single_piece_bit_board):
             y_location = i // engine_constants.N_RANKS
             locations.append((x_location, y_location))
 
+    print("Binary:", binary_rep)
+    print("Locations:", locations)
+
     # Return the list of all locations, as specified by the bit board.
     return locations
 
@@ -58,6 +61,11 @@ def locations_to_bitboard(locations):
 
 
 def location_to_bitboard(location):
+    """
+    Converts a location into a bitboard representation.
+    :param location: a 2-Tuple (x,y) of grid coordinates.
+    :return: an integer containing the underlying bitboard representation.
+    """
     from engine import engine_constants
     # Create a string of 0s with capacity to store the entire board state.
     binary = '0' * engine_constants.BIT_BOARD_WIDTH
@@ -71,7 +79,8 @@ def location_to_bitboard(location):
 
 
 def move_piece_by_location(bit_boards, old_location, new_location):
-    """ Given two locations, update the bit board.
+    """ Given two locations, update the bit board. No assumptions are made about the move's validity. If the move
+    results in a capture, then the capture is made.
 
     :param bit_boards: a BitBoard object
     :param old_location: 2-tuple (x,y), The location of the original piece.
@@ -95,7 +104,9 @@ def move_piece_by_location(bit_boards, old_location, new_location):
 
     if piece_type is not None:
         # Determine the bitboard of valid locations for movement by the piece
-        valid_movement_options = piece_movement.return_valid_moves_by_type(bit_boards, piece_type)
+
+        valid_movement_options = piece_movement.return_valid_moves_by_type_and_location(bit_boards, piece_type,
+                                                                                        old_bitboard)
 
         # If the piece type is not valid
         if new_bitboard & valid_movement_options == 0:
@@ -105,6 +116,7 @@ def move_piece_by_location(bit_boards, old_location, new_location):
         bit_boards[piece_type] &= ~old_bitboard
         bit_boards[piece_type] |= new_bitboard
 
+        # Black team pieces are represented by lower case letters.
         team = 'b' if str.islower(piece_type) else 'r'
         # Handle capturing the other team's pieces (if they exist):
         for key in bit_boards:

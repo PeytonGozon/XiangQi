@@ -29,6 +29,12 @@ RANK_3 = int('1'*N_FILES + '0' * N_FILES * (N_RANKS - 7), 2)
 RANK_2 = int('1'*N_FILES + '0' * N_FILES * (N_RANKS - 8), 2)
 RANK_1 = int('1'*N_FILES, 2)
 
+FILE_1 = int(('1' + '0' * (N_FILES-1))*N_RANKS, 2)
+FILE_8 = int(('0' * (N_FILES-1) + '1')*N_RANKS, 2)
+
+TOP_HALF = int('1' * (N_RANKS * N_FILES // 2) + '0' * (N_RANKS * N_FILES // 2), 2)
+BOTTOM_HALF = int('0' * (N_RANKS * N_FILES // 2) + '1' * (N_RANKS * N_FILES // 2), 2)
+
 BLACK_PALACE_LOCATIONS = [
     (3, 0), (4, 0), (5, 0),
     (3, 1), (4, 1), (5, 1),

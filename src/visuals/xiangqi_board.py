@@ -1,7 +1,7 @@
 import pygame
 from engine import piece_movement, engine_util
 from engine.chess_engine import ChessEngine
-from visuals import utils
+from visuals import visual_utils
 from visuals.visual_constants import *
 
 
@@ -80,10 +80,16 @@ class Board(object):
         self.on_cleanup()
 
     def handle_move_piece(self, mouse_location):
+        # FIXME: make it so that you cannot attempt to move blank coordinates.
         # Convert the mouse's location into grid coordinates
-        grid_location = utils.mouse_location_to_grid_location(mouse_location)
+        grid_location = visual_utils.mouse_location_to_grid_location(mouse_location)
 
-        if grid_location != utils.BAD_LOCATION:
+        def cleanup_handling():
+            self._piece_locations = []
+            self._piece_hovering = False
+            pygame.display.set_caption("象棋 - XiangQi")
+
+        if grid_location != visual_utils.BAD_LOCATION:
             self._piece_hovering = not self._piece_hovering
             self._piece_locations.append(grid_location)
 
@@ -95,13 +101,13 @@ class Board(object):
             # If the piece is no longer hovering, move its location
             if not self._piece_hovering:
                 success = self.move_piece(True)
-                if success:
-                    self._piece_locations = []
-                    pygame.display.set_caption("象棋 - XiangQi")
-                else:
+                if not success:
                     self._piece_hovering = True
                     if len(self._piece_locations) > 1:
                         self._piece_locations.pop(-1)
+        else:
+            # Allow the user to deselect a piece.
+            cleanup_handling()
 
     def move_piece(self, verbose=False):
         # Need an even number of locations to know where we're moving from to where we're moving to.
@@ -119,6 +125,7 @@ class Board(object):
         return False
 
     def render_valid_moves(self):
+        # FIXME: allow for proper handling of the river
         # Obtain the location of the piece we're moving
         location = self._piece_locations[0]
 
@@ -127,7 +134,7 @@ class Board(object):
 
         # Find the correct set of valid moves
         valid_moves = engine_util.bitboard_to_locations(
-            piece_movement.return_valid_moves_by_type(self._chess_engine.bit_board, piece_class)
+            piece_movement.return_valid_moves_by_type_and_location(self._chess_engine.bit_board, piece_class, location)
         )
 
         # Render green circles at all valid locations
@@ -138,7 +145,10 @@ class Board(object):
             text, team = PIECE_CLASS_TO_TEXT[piece_class]
             text_image = self._font.render(text, True, RED_TEXT if team is 'r' else BLACK_TEXT)
 
+        # print("Piece type:", piece_class, "has moves: ")
+
         for location in locations:
+            # print(location)
             if piece_class != 'potential':
                 x = (location % N_FILES) * HORIZONTAL_TILE_SIZE + HORIZONTAL_PADDING
                 y = int(location / N_FILES) * VERTICAL_TILE_SIZE + VERTICAL_PADDING
@@ -185,7 +195,7 @@ class Board(object):
                              (HORIZONTAL_PADDING + i * HORIZONTAL_TILE_SIZE, WINDOW_HEIGHT - VERTICAL_PADDING - 10),
                              INNER_LINE_THICKNESS)
 
-        # Draw in the diagonal lines for advisors
+        # Draw in the diagonal lines for advisers
         # Top
         pygame.draw.line(self._display_surf, LINE_COLOR, (BOARD_LEFT + 3 * HORIZONTAL_TILE_SIZE, BOARD_TOP),
                          (BOARD_LEFT + 5 * HORIZONTAL_TILE_SIZE, BOARD_TOP + 2 * VERTICAL_TILE_SIZE),

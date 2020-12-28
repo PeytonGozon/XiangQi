@@ -2,7 +2,7 @@ from pygame import Rect, Surface, SRCALPHA
 from engine.engine_constants import N_RANKS, N_FILES
 
 # Scale of all UI components, Refresh Rate (30 Hz)
-SCALE = 2
+SCALE = 1
 FPS = 30
 
 # The width and height of the game window

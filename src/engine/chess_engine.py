@@ -12,8 +12,8 @@ class ChessEngine:
 class BitBoard(MutableMapping):
     def __init__(self, board_state=None):
         """
-        Initialize a BitBoard object to encapsulate the board's game state. If board_state is specified, then it uses
-        board_state rather than the default game state.
+        Initialize a BitBoard object to encapsulate the board's game state. If no initial board state is specified, then
+        the default board state is used.
 
         :param board_state: shape: (N_RANK, N_FILE) string array, containing the game's board state.
         """
@@ -60,6 +60,12 @@ class BitBoard(MutableMapping):
         return locations
 
     def get_class_by_location(self, location):
+        """
+        Obtains the class of the piece at a given location
+
+        :param location: 2-Tuple (x,y) of the piece
+        :return: A string containing the internal representation of the piece if a piece exists, or "" otherwise.
+        """
         from engine.engine_util import location_to_bitboard
         # Convert the location to a bitboard representation
         bitboard = location_to_bitboard(location)
@@ -68,23 +74,27 @@ class BitBoard(MutableMapping):
             if self.bit_boards[key] & bitboard != 0:
                 return key
 
+        return ""
+
     def string_array_to_bit_board(self, string_game_state, verbose=True):
-        from engine.engine_constants import N_RANKS, N_FILES
         """
         Update the bitboards from 2D string array representation of a game state.
+
         Board Pieces Key:
-            r/R: Chariot (rook)
-            h/H: Horse
-            e/E: Elephant
-            a/A: Advisor
-            g/G: General
-            c/C: Cannon
-            p/P: Pawn/Soldier
+            r/R: Chariot (rook)\n
+            h/H: Horse\n
+            e/E: Elephant\n
+            a/A: Adviser\n
+            g/G: General\n
+            c/C: Cannon\n
+            p/P: Pawn/Soldier\n
               .: Empty space
+
         :param string_game_state: a 2D array containing the individual pieces of the board, encoded via the key above.
         :param verbose: whether to display more detailed output.
         :return: void, all bit boards are updated in place.
         """
+        from engine.engine_constants import N_RANKS, N_FILES
         from engine.engine_util import location_to_bitboard
         # Ensure that the string representation is of the right dimensions.
         assert (string_game_state.shape == (N_RANKS, N_FILES))
@@ -103,8 +113,3 @@ class BitBoard(MutableMapping):
                 # Add the current position's binary to the correct bit board.
                 if piece in self.bit_boards:
                     self.bit_boards[piece] += location_to_bitboard((x, y))
-
-
-if __name__ == "__main__":
-    engine = ChessEngine()
-    print(engine.bit_board)
