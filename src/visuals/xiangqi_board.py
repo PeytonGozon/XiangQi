@@ -152,7 +152,6 @@ class Board(object):
         return False
 
     def render_valid_moves(self):
-        # FIXME: allow for proper handling of the river
         # Obtain the location of the piece we're moving
         location = self._piece_movement_locations[0]
 

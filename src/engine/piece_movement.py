@@ -76,8 +76,11 @@ def black_pawn_valid_movements(bit_boards: BitBoard, piece_location: Optional[in
     :return: a bit board containing all valid movement locations.
     """
     from .engine_constants import RANK_1, BOTTOM_HALF, FILE_1, FILE_8
+    import numpy as np
 
     pawn_bitboard = piece_location if piece_location is not None else bit_boards['p']
+
+    print(np.binary_repr(pawn_bitboard, width=90))
 
     # With pawns, there are two types of movement. If the pawn is still on its side of the river, then
     # it may only move forward. However, once it crosses the river, then the piece may move one step either forward,
@@ -98,7 +101,7 @@ def black_pawn_valid_movements(bit_boards: BitBoard, piece_location: Optional[in
         if pawn_bitboard & FILE_8 == 0:
             potential_location |= (pawn_bitboard >> 1)
 
-    potential_location = restrict_movement_by_team(pawn_bitboard, bit_boards, 'b')
+    potential_location = restrict_movement_by_team(potential_location, bit_boards, 'b')
 
     return potential_location
 

@@ -59,12 +59,12 @@ def location_to_bitboard(location):
     :param location: a 2-Tuple (x,y) of grid coordinates.
     :return: an integer containing the underlying bitboard representation.
     """
-    from engine import engine_constants
+    from engine.engine_constants import BIT_BOARD_WIDTH, N_FILES
     # Create a string of 0s with capacity to store the entire board state.
-    binary = '0' * engine_constants.BIT_BOARD_WIDTH
+    binary = '0' * BIT_BOARD_WIDTH
 
     # Denote the current position with a 1.
-    loc = location[1] * engine_constants.N_FILES + location[0]
+    loc = location[1] * N_FILES + location[0]
     binary = binary[:loc] + '1' + binary[loc + 1:]
 
     # Return the corresponding bit board as a number.
