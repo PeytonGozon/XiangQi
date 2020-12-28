@@ -31,7 +31,7 @@ class Board(object):
         self._clock = pygame.time.Clock()
 
         # Load the font for drawing text to the pieces, and determine the optimal text displacement
-        self._font = pygame.font.Font('font.ttf', 24*SCALE)
+        self._font = pygame.font.Font('res/font.ttf', 24*SCALE)
         temp = self._font.render('车', True, BLACK_TEXT)
         text_size = temp.get_size()
         self._text_displacement = (0.5 * text_size[0], 0.5 * text_size[1])
@@ -204,12 +204,3 @@ class Board(object):
                          (BOARD_LEFT + 3 * HORIZONTAL_TILE_SIZE, BOARD_TOP + BOARD_HEIGHT - 2 * VERTICAL_TILE_SIZE),
                          (BOARD_LEFT + 5 * HORIZONTAL_TILE_SIZE, BOARD_TOP + BOARD_HEIGHT - 4),
                          INNER_LINE_THICKNESS)
-
-
-if __name__ == "__main__":
-    from engine.engine_constants import DEFAULT_BOARD_STATE
-    tweaked_board = DEFAULT_BOARD_STATE
-    tweaked_board[1][4] = 'P'
-    xiangqi_engine = ChessEngine()
-    xiangqi_board = Board(xiangqi_engine)
-    xiangqi_board.on_execute()
