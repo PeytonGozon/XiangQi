@@ -95,42 +95,49 @@ class Board(object):
         from .visual_utils import BAD_LOCATION
         from .visual_constants import PIECE_CLASS_TO_TEXT
         from engine.engine_util import piece_class_by_location
-        # FIXME: make it so that you cannot attempt to move blank coordinates.
 
         # Convert the mouse's location into grid coordinates
         grid_location = visual_utils.mouse_location_to_grid_location(mouse_location)
 
-        # Ensure that the location selected is valid:
-        if grid_location != BAD_LOCATION:
-            # Ensure that there is a piece at the selected location
-            piece_class = piece_class_by_location(
-                self._chess_engine.bit_board, grid_location
-            )
-
-            # If the piece at the location is not none
-            if piece_class is not None:
-                # Add the currently selected piece to the list of locations
-                self._piece_movement_locations.append(grid_location)
-
-                # If a piece is already selected, move it and perform clean up.
-                if self._piece_selected:
-                    self.move_piece(True)
-                    self._piece_selected = False
-                    self._piece_movement_locations = []
-                    pygame.display.set_caption("象棋 - XiangQi")
-                else:
-                    self._piece_selected = True
-                    # Find the correct name for the piece
-                    piece_class = PIECE_CLASS_TO_TEXT[piece_class][0]
-                    pygame.display.set_caption(f'棋 - XiangQi [{piece_class} from {grid_location}]')
-
-        else:  # Invalid Chess Piece, reset the function.
+        # Reset function
+        def reset():
             self._piece_movement_locations = []
             self._piece_selected = False
             pygame.display.set_caption("象棋 - XiangQi")
 
+        # Ensure that the location selected is valid:
+        if grid_location != BAD_LOCATION:
+
+            # Check whether we are selecting or placing
+            if not self._piece_selected:  # Selecting
+                # Capture the piece's class
+                piece_class = piece_class_by_location(
+                    self._chess_engine.bit_board, grid_location
+                )
+
+                # If the piece is valid, add it to the list and update the title
+                # otherwise, do nothing.
+                if piece_class is not None:
+                    self._piece_movement_locations.append(grid_location)
+                    self._piece_selected = True
+                    # Find the correct name for the piece
+                    piece_class = PIECE_CLASS_TO_TEXT[piece_class][0]
+                    pygame.display.set_caption(f'棋 - XiangQi [{piece_class} from {grid_location}]')
+            else:  # Placing the currently selected piece
+                self._piece_movement_locations.append(grid_location)
+                success = self.move_piece(True)
+
+                if success:  # Reset the function
+                    reset()
+                else:
+                    self._piece_movement_locations.pop(-1)
+
+        else:  # Invalid Chess Piece, reset the function.
+            reset()
+
     def move_piece(self, verbose=False):
         # Need an even number of locations to know where we're moving from to where we're moving to.
+        print(self._piece_movement_locations)
         assert (len(self._piece_movement_locations) % 2 == 0)
 
         success = engine_util.move_piece_by_location(self._chess_engine.bit_board, self._piece_movement_locations[0],
