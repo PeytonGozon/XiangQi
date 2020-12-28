@@ -15,8 +15,9 @@ class Board(object):
         self._clock = None
         self._text_displacement = None
         # whether we are currently moving a piece or not.
-        self._piece_hovering = False
-        self._piece_locations = []
+        self._piece_selected = False
+        self._piece_movement_locations = []
+        self._needs_rendering_update = True
 
     def on_init(self):
         # Initialize pygame, the visual backend
@@ -47,6 +48,7 @@ class Board(object):
             self._running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             self.handle_move_piece(pygame.mouse.get_pos())
+            self._needs_rendering_update = True
 
     def on_loop(self):
         pass
@@ -56,12 +58,12 @@ class Board(object):
         self.render_board_background()
         self.render_pieces()
 
-        if self._piece_hovering:
+        if self._piece_selected:
             self.render_valid_moves()
 
         # Update the screen and the clock
         pygame.display.update()
-        self._clock.tick(FPS)
+        self._needs_rendering_update = False
 
     def on_cleanup(self):
         pygame.font.quit()
@@ -75,50 +77,68 @@ class Board(object):
                 self.on_event(event)
 
             self.on_loop()
-            self.on_render()
+            if self._needs_rendering_update:
+                self.on_render()
+            self._clock.tick(FPS)
 
         self.on_cleanup()
 
     def handle_move_piece(self, mouse_location):
+        """
+        This function has two separate functionalities, depending on whether a piece is currently selected
+        to be moved or not. If no piece is selected to be moved, this function allows the user to select a
+        piece. If a piece has been selected, then this function handles moving the piece to its new location.
+
+        :param mouse_location: a 2-Tuple (x,y) containing the location of the mouse.
+        :return: void
+        """
+        from .visual_utils import BAD_LOCATION
+        from .visual_constants import PIECE_CLASS_TO_TEXT
+        from engine.engine_util import piece_class_by_location
         # FIXME: make it so that you cannot attempt to move blank coordinates.
+
         # Convert the mouse's location into grid coordinates
         grid_location = visual_utils.mouse_location_to_grid_location(mouse_location)
 
-        def cleanup_handling():
-            self._piece_locations = []
-            self._piece_hovering = False
+        # Ensure that the location selected is valid:
+        if grid_location != BAD_LOCATION:
+            # Ensure that there is a piece at the selected location
+            piece_class = piece_class_by_location(
+                self._chess_engine.bit_board, grid_location, just_class=True
+            )
+
+            # If the piece at the location is not none
+            if piece_class is not None:
+                # Add the currently selected piece to the list of locations
+                self._piece_movement_locations.append(grid_location)
+
+                # If a piece is already selected, move it and perform clean up.
+                if self._piece_selected:
+                    self.move_piece(True)
+                    self._piece_selected = False
+                    self._piece_movement_locations = []
+                    pygame.display.set_caption("象棋 - XiangQi")
+                else:
+                    self._piece_selected = True
+                    # Find the correct name for the piece
+                    piece_class = PIECE_CLASS_TO_TEXT[piece_class][0]
+                    pygame.display.set_caption(f'棋 - XiangQi [MOVING {piece_class} from location {grid_location}]')
+
+        else:  # Invalid Chess Piece, reset the function.
+            self._piece_movement_locations = []
+            self._piece_selected = False
             pygame.display.set_caption("象棋 - XiangQi")
-
-        if grid_location != visual_utils.BAD_LOCATION:
-            self._piece_hovering = not self._piece_hovering
-            self._piece_locations.append(grid_location)
-
-            # Update the game window's title to let the user know they are hovering
-            if self._piece_hovering:
-                piece_class = engine_util.piece_class_by_location(self._chess_engine.bit_board, grid_location)
-                pygame.display.set_caption(f'棋 - XiangQi [MOVING  {piece_class} from location {grid_location}]')
-
-            # If the piece is no longer hovering, move its location
-            if not self._piece_hovering:
-                success = self.move_piece(True)
-                if not success:
-                    self._piece_hovering = True
-                    if len(self._piece_locations) > 1:
-                        self._piece_locations.pop(-1)
-        else:
-            # Allow the user to deselect a piece.
-            cleanup_handling()
 
     def move_piece(self, verbose=False):
         # Need an even number of locations to know where we're moving from to where we're moving to.
-        assert (len(self._piece_locations) % 2 == 0)
+        assert (len(self._piece_movement_locations) % 2 == 0)
 
-        success = engine_util.move_piece_by_location(self._chess_engine.bit_board, self._piece_locations[0],
-                                                     self._piece_locations[1])
+        success = engine_util.move_piece_by_location(self._chess_engine.bit_board, self._piece_movement_locations[0],
+                                                     self._piece_movement_locations[1])
 
         if success:
             if verbose:
-                print("Moved piece: ", self._piece_locations)
+                print("Moved piece: ", self._piece_movement_locations)
             # Clean the piece locations to maintain memory
             return True
 
@@ -127,7 +147,7 @@ class Board(object):
     def render_valid_moves(self):
         # FIXME: allow for proper handling of the river
         # Obtain the location of the piece we're moving
-        location = self._piece_locations[0]
+        location = self._piece_movement_locations[0]
 
         # obtain the piece class:
         piece_class = engine_util.piece_class_by_location(self._chess_engine.bit_board, location, just_class=True)

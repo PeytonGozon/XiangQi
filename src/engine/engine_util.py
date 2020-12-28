@@ -4,7 +4,7 @@ def piece_class_by_location(bit_board, location, just_class=False):
     :param bit_board: BitBoard object
     :param location: 2-tuple (x,y) of the given location
     :param just_class: whether to just return the internal name of the piece or not.
-    :return: the piece's class at location, or "" if it does not exist.
+    :return: the piece's class at location, or None if it does not exist.
     """
     location_bitboard = location_to_bitboard(location)
 
@@ -16,7 +16,7 @@ def piece_class_by_location(bit_board, location, just_class=False):
             name, color = visuals.visual_constants.PIECE_CLASS_TO_TEXT[key]
             return "red " if color == 'r' else "black" + " " + name
 
-    return ""
+    return None
 
 
 def bitboard_to_locations(single_piece_bit_board):
@@ -38,9 +38,6 @@ def bitboard_to_locations(single_piece_bit_board):
             x_location = i % engine_constants.N_FILES
             y_location = i // engine_constants.N_RANKS
             locations.append((x_location, y_location))
-
-    print("Binary:", binary_rep)
-    print("Locations:", locations)
 
     # Return the list of all locations, as specified by the bit board.
     return locations
